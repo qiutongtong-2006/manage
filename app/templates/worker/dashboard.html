@@ -1,0 +1,138 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import status_badge, score_stars, empty_state %}
+{% block title %}维修工作台 · 宿舍报修管理系统{% endblock %}
+{% block content %}
+<div class="hero rounded-4 p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h4 class="mb-1">你好，{{ current_user.real_name }} 师傅 🔧</h4>
+            <p class="mb-0 opacity-75">
+                工号 {{ current_user.worker_no }} · 工种 {{ current_user.skill or '综合维修' }}
+                —— 当前有 <strong>{{ pagination.total }}</strong> 条工单等待受理。
+            </p>
+        </div>
+        <a href="{{ url_for('worker.pending_orders') }}" class="btn btn-light btn-lg">
+            <i class="bi bi-inbox me-1"></i>去抢单大厅
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <div class="stat-value">{{ pagination.total }}</div>
+                    <div class="stat-label">待受理工单</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-wrench-adjustable"></i></div>
+                <div>
+                    <div class="stat-value">{{ profile.processing }}</div>
+                    <div class="stat-label">维修中</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-patch-check"></i></div>
+                <div>
+                    <div class="stat-value">{{ profile.completed }}</div>
+                    <div class="stat-label">已完成维修</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-star"></i></div>
+                <div>
+                    <div class="stat-value">{{ profile.avg_score }}</div>
+                    <div class="stat-label">平均评分</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm table-card mb-4">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-inbox me-2"></i>最新待受理工单</span>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('worker.pending_orders') }}">查看全部</a>
+    </div>
+    {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>工单号</th>
+                    <th>故障类别</th>
+                    <th>宿舍</th>
+                    <th>故障描述</th>
+                    <th>提交时间</th>
+                    <th class="text-end">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td class="font-monospace small">{{ order.order_no }}</td>
+                        <td>{{ order.category_name }}</td>
+                        <td>{{ order.building }} {{ order.dorm_no }}</td>
+                        <td class="text-truncate" style="max-width: 240px;" title="{{ order.description }}">{{ order.description }}</td>
+                        <td class="text-muted small">{{ order.created_at | dt }}</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="{{ url_for('worker.order_detail', order_id=order.id) }}">详情</a>
+                            <form class="d-inline js-confirm" method="post"
+                                  action="{{ url_for('worker.accept_order', order_id=order.id) }}"
+                                  data-confirm="确认接单？接单后该工单将由你负责维修。"
+                                  data-confirm-title="接单确认" data-confirm-ok="确认接单"
+                                  data-confirm-variant="primary">
+                                <button type="submit" class="btn btn-sm btn-primary">接单</button>
+                            </form>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="card-body">{{ empty_state('当前没有待受理的工单，可以先休息一下', 'bi-cup-hot') }}</div>
+    {% endif %}
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-star me-2"></i>最新收到的评价</span>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('worker.reviews') }}">全部评价</a>
+    </div>
+    <div class="card-body">
+        {% if reviews %}
+            {% for review in reviews %}
+                <div class="d-flex gap-3 pb-3 mb-3 border-bottom">
+                    <div>{{ score_stars(review.score) }}</div>
+                    <div class="flex-grow-1">
+                        <div class="small text-muted">
+                            {{ review.student_name }} · {{ review.category_name }} · {{ review.building }} {{ review.dorm_no }}
+                            · {{ review.created_at | dt }}
+                        </div>
+                        <div>{{ review.content or '该学生未填写文字评价' }}</div>
+                    </div>
+                </div>
+            {% endfor %}
+        {% else %}
+            {{ empty_state('还没有收到学生评价', 'bi-chat-square') }}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

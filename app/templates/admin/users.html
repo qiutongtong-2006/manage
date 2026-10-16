@@ -1,0 +1,275 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import pagination_bar, empty_state %}
+{% block title %}用户管理 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">系统概览</a></li>
+        <li class="breadcrumb-item active">用户管理</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <div class="section-title">用户管理</div>
+        <div class="section-subtitle">新增、查看、删除学生与维修人员账号（管理员账号受保护，不可删除）</div>
+    </div>
+    <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#createUserModal">
+        <i class="bi bi-person-plus me-1"></i>新增账号
+    </button>
+</div>
+
+<div class="row g-3 mb-3">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">账号总数</div>
+                <div class="stat-value">{{ counts.total }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">学生账号</div>
+                <div class="stat-value">{{ counts.student }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">维修人员</div>
+                <div class="stat-value">{{ counts.worker }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">管理员</div>
+                <div class="stat-value">{{ counts.admin }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="filter-bar mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label small text-muted mb-1">关键词</label>
+            <input type="text" class="form-control" name="keyword" value="{{ keyword }}"
+                   placeholder="账号 / 姓名 / 学号 / 工号 / 电话">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small text-muted mb-1">角色</label>
+            <select class="form-select" name="role">
+                <option value="">全部角色</option>
+                {% for key, label in ROLE_LABEL.items() %}
+                    <option value="{{ key }}" {{ 'selected' if role == key }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-primary flex-grow-1">
+                <i class="bi bi-search me-1"></i>查询
+            </button>
+            <a class="btn btn-light" href="{{ url_for('admin.user_list') }}">重置</a>
+        </div>
+    </form>
+</div>
+
+<div class="card border-0 shadow-sm table-card">
+    {% if users %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>登录账号</th>
+                    <th>姓名</th>
+                    <th>角色</th>
+                    <th>学号 / 工号</th>
+                    <th>联系电话</th>
+                    <th>宿舍 / 工种</th>
+                    <th>创建时间</th>
+                    <th>最近登录</th>
+                    <th class="text-end">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for user in users %}
+                    <tr>
+                        <td class="font-monospace small">{{ user.username }}</td>
+                        <td>{{ user.real_name }}</td>
+                        <td>
+                            <span class="badge rounded-pill
+                                {% if user.role == 'student' %}bg-primary-subtle text-primary
+                                {% elif user.role == 'worker' %}bg-success-subtle text-success
+                                {% else %}bg-warning-subtle text-warning{% endif %}">
+                                {{ ROLE_LABEL.get(user.role, user.role) }}
+                            </span>
+                        </td>
+                        <td class="small">{{ user.student_no or user.worker_no or '—' }}</td>
+                        <td class="small">{{ user.phone or '—' }}</td>
+                        <td class="small">{{ user.dorm_no or user.skill or '—' }}</td>
+                        <td class="text-muted small">{{ user.created_at | dt('%Y-%m-%d') }}</td>
+                        <td class="text-muted small">{{ user.last_login_at | dt }}</td>
+                        <td class="text-end text-nowrap">
+                            <button type="button" class="btn btn-sm btn-outline-primary js-reset-password"
+                                    data-user-id="{{ user.id }}" data-username="{{ user.username }}"
+                                    data-bs-toggle="modal" data-bs-target="#resetPasswordModal">重置密码</button>
+                            {% if user.role != 'admin' %}
+                                <form class="d-inline js-confirm" method="post"
+                                      action="{{ url_for('admin.user_delete', user_id=user.id) }}"
+                                      data-confirm="确定删除账号「{{ user.username }}（{{ user.real_name }}）」吗？删除后该账号将无法登录，且不可恢复。"
+                                      data-confirm-title="删除账号确认" data-confirm-ok="确认删除">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-body">
+            {% set base_query = request.path + '?role=' + (role or '') + '&keyword=' + keyword + '&' %}
+            {{ pagination_bar(pagination, base_query) }}
+        </div>
+    {% else %}
+        <div class="card-body">{{ empty_state('没有查到符合条件的账号') }}</div>
+    {% endif %}
+</div>
+
+{# ------------------------------ 新增账号弹窗 ------------------------------ #}
+<div class="modal fade" id="createUserModal" tabindex="-1">
+    <div class="modal-dialog modal-lg modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" action="{{ url_for('admin.user_create') }}" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-person-plus me-2"></i>新增账号</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label required" for="new_role">账号角色</label>
+                            <select class="form-select" id="new_role" name="role" required onchange="toggleRoleFields()">
+                                <option value="student">学生</option>
+                                <option value="worker">维修人员</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required" for="new_username">登录账号</label>
+                            <input type="text" class="form-control" id="new_username" name="username"
+                                   placeholder="4-20 位字母、数字或下划线" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required" for="new_real_name">姓名</label>
+                            <input type="text" class="form-control" id="new_real_name" name="real_name" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required" for="new_phone">联系电话</label>
+                            <input type="text" class="form-control" id="new_phone" name="phone"
+                                   placeholder="11 位手机号" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required" for="new_password">初始密码</label>
+                            <input type="text" class="form-control" id="new_password" name="password"
+                                   value="123456" required>
+                            <div class="form-text">建议使用默认密码 123456，并提醒用户首次登录后修改。</div>
+                        </div>
+
+                        <div class="col-md-6 role-field role-student">
+                            <label class="form-label required" for="new_student_no">学号</label>
+                            <input type="text" class="form-control" id="new_student_no" name="student_no">
+                        </div>
+                        <div class="col-md-6 role-field role-student">
+                            <label class="form-label required" for="new_dorm_no">宿舍号</label>
+                            <input type="text" class="form-control" id="new_dorm_no" name="dorm_no"
+                                   placeholder="例如：3号楼 512">
+                        </div>
+
+                        <div class="col-md-6 role-field role-worker d-none">
+                            <label class="form-label required" for="new_worker_no">工号</label>
+                            <input type="text" class="form-control" id="new_worker_no" name="worker_no">
+                        </div>
+                        <div class="col-md-6 role-field role-worker d-none">
+                            <label class="form-label required" for="new_skill">工种</label>
+                            <select class="form-select" id="new_skill" name="skill">
+                                {% for skill in WORKER_SKILLS %}
+                                    <option value="{{ skill }}">{{ skill }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-check2 me-1"></i>确认新增
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+{# ------------------------------ 重置密码弹窗 ------------------------------ #}
+<div class="modal fade" id="resetPasswordModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form method="post" id="resetPasswordForm" novalidate>
+                <div class="modal-header">
+                    <h5 class="modal-title"><i class="bi bi-key me-2"></i>重置密码</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="text-muted small mb-3">
+                        即将重置账号 <strong id="resetUsername"></strong> 的登录密码，请把新密码告知用户。
+                    </p>
+                    <label class="form-label required" for="new_password_value">新密码</label>
+                    <input type="text" class="form-control" id="new_password_value" name="new_password"
+                           value="123456" required>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                    <button type="submit" class="btn btn-primary">确认重置</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // 新增账号弹窗：根据角色显示学生字段或维修工字段
+    function toggleRoleFields() {
+        var role = document.getElementById('new_role').value;
+        document.querySelectorAll('.role-field').forEach(function (el) {
+            el.classList.toggle('d-none', !el.classList.contains('role-' + role));
+        });
+    }
+    document.querySelectorAll('.role-field input, .role-field select').forEach(function (el) {
+        el.disabled = el.closest('.role-field').classList.contains('d-none');
+    });
+    toggleRoleFields();
+    document.getElementById('new_role').addEventListener('change', function () {
+        document.querySelectorAll('.role-field input, .role-field select').forEach(function (el) {
+            el.disabled = el.closest('.role-field').classList.contains('d-none');
+        });
+    });
+
+    // 重置密码弹窗：把目标用户 id 写入表单 action
+    document.querySelectorAll('.js-reset-password').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+            document.getElementById('resetUsername').textContent =
+                btn.dataset.username;
+            document.getElementById('resetPasswordForm').action =
+                '/admin/users/' + btn.dataset.userId + '/reset-password';
+        });
+    });
+</script>
+{% endblock %}

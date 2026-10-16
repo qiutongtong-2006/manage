@@ -1,0 +1,45 @@
+{% extends "base.html" %}
+{% block title %}登录 · 宿舍报修管理系统{% endblock %}
+{% block content %}
+<div class="auth-wrapper">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header">
+            <div class="title"><i class="bi bi-box-arrow-in-right me-2"></i>用户登录</div>
+            <div class="small opacity-75 mt-1">学生 / 维修人员 / 管理员 均可使用本入口登录</div>
+        </div>
+        <div class="card-body p-4">
+            <form method="post" novalidate>
+                <input type="hidden" name="next" value="{{ request.args.get('next', '') }}">
+                <div class="mb-3">
+                    <label class="form-label required" for="username">登录账号</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-person"></i></span>
+                        <input type="text" class="form-control" id="username" name="username"
+                               value="{{ username or '' }}" placeholder="请输入账号" required autofocus>
+                    </div>
+                </div>
+                <div class="mb-4">
+                    <label class="form-label required" for="password">登录密码</label>
+                    <div class="input-group">
+                        <span class="input-group-text"><i class="bi bi-lock"></i></span>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="请输入密码" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>登 录
+                </button>
+            </form>
+            <div class="text-center mt-3 small">
+                还没有账号？<a href="{{ url_for('auth.register') }}">立即注册学生账号</a>
+            </div>
+            <div class="hint-box p-3 mt-4">
+                <div class="fw-semibold text-dark mb-1"><i class="bi bi-info-circle me-1"></i>演示账号（初始密码均为 123456）</div>
+                <div>管理员：<code>admin</code></div>
+                <div>维修人员：<code>worker001</code> / <code>worker002</code></div>
+                <div>学生：<code>student001</code></div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

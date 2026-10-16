@@ -1,0 +1,179 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import status_badge, score_stars, order_steps %}
+{% block title %}工单详情 {{ order.order_no }} · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">工作台</a></li>
+        <li class="breadcrumb-item">
+            {% if is_owner %}
+                <a href="{{ url_for('worker.order_list') }}">我的维修单</a>
+            {% else %}
+                <a href="{{ url_for('worker.pending_orders') }}">待受理工单</a>
+            {% endif %}
+        </li>
+        <li class="breadcrumb-item active">{{ order.order_no }}</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <div class="section-title">
+                    工单号 <span class="font-monospace">{{ order.order_no }}</span>
+                    {{ status_badge(order.status) }}
+                </div>
+                <div class="section-subtitle">{{ order.category_name }} · {{ order.building }} {{ order.dorm_no }}</div>
+            </div>
+            {% if not is_owner and order.status == 'pending' %}
+                <form class="js-confirm" method="post" action="{{ url_for('worker.accept_order', order_id=order.id) }}"
+                      data-confirm="确认接单？接单后该工单将由你负责维修。"
+                      data-confirm-title="接单确认" data-confirm-ok="确认接单" data-confirm-variant="primary">
+                    <button type="submit" class="btn btn-primary">
+                        <i class="bi bi-hand-index-thumb me-1"></i>立即接单
+                    </button>
+                </form>
+            {% endif %}
+        </div>
+        {{ order_steps(step, reviewed=order.score is not none) }}
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header"><i class="bi bi-file-earmark-text me-2"></i>报修信息</div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-4">
+                        <div class="text-muted small">报修学生</div>
+                        <div>{{ order.student_name }}</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">联系电话</div>
+                        <div><a href="tel:{{ order.phone }}">{{ order.phone }}</a></div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">提交时间</div>
+                        <div class="small">{{ order.created_at | dt }}</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted small">故障详细描述</div>
+                    <div class="border rounded-3 p-3 bg-body-tertiary" style="white-space: pre-wrap;">{{ order.description }}</div>
+                </div>
+                {% if images %}
+                    <div class="text-muted small mb-2">现场图片（点击查看大图）</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for image in images %}
+                            <a href="{{ url_for('static', filename=image.file_path) }}" target="_blank">
+                                <img class="thumb" src="{{ url_for('static', filename=image.file_path) }}" alt="报修现场图片">
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-muted small">学生未上传现场图片</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header"><i class="bi bi-activity me-2"></i>维修进度记录</div>
+            <div class="card-body">
+                <ul class="timeline">
+                    {% for log in logs %}
+                        <li>
+                            <div class="fw-semibold">
+                                {{ ACTION_LABEL.get(log.action, log.action) }}
+                                {% if log.operator_name %}
+                                    <span class="text-muted fw-normal small">· {{ log.operator_name }}</span>
+                                {% endif %}
+                            </div>
+                            {% if log.remark %}<div class="small">{{ log.remark }}</div>{% endif %}
+                            <span class="time">{{ log.created_at | dt('%Y-%m-%d %H:%M:%S') }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-5">
+        {% if is_owner and order.status != 'completed' %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header"><i class="bi bi-tools me-2"></i>更新维修进度</div>
+                <div class="card-body">
+                    <form method="post" action="{{ url_for('worker.update_order', order_id=order.id) }}" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label required" for="status">维修状态</label>
+                            <select class="form-select" id="status" name="status" required>
+                                {% for value, label in next_status_options %}
+                                    <option value="{{ value }}" {{ 'selected' if value == order.status }}>{{ label }}</option>
+                                {% endfor %}
+                            </select>
+                            <div class="form-text">选择「已完成」将记录完成时间，学生即可进行评价。</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="remark">维修备注</label>
+                            <textarea class="form-control" id="remark" name="remark" rows="4"
+                                      placeholder="例如：已更换洗手台下水管，测试无渗漏；或：需采购配件，预计明天上门"></textarea>
+                            <div class="form-text">备注会展示给学生，请填写故障原因与处理结果。</div>
+                        </div>
+                        <button type="submit" class="btn btn-primary w-100">
+                            <i class="bi bi-check2-circle me-1"></i>提交更新
+                        </button>
+                    </form>
+                </div>
+            </div>
+        {% elif order.status == 'completed' %}
+            <div class="alert alert-success">
+                <i class="bi bi-check-circle me-1"></i>该工单已于 {{ order.completed_at | dt }} 维修完成。
+            </div>
+        {% elif not is_owner %}
+            <div class="alert alert-warning">
+                <i class="bi bi-exclamation-triangle me-1"></i>该工单尚未被受理，点击上方「立即接单」即可开始维修。
+            </div>
+        {% endif %}
+
+        {% if order.score %}
+            <div class="card border-0 shadow-sm mb-4">
+                <div class="card-header"><i class="bi bi-star me-2"></i>学生评价</div>
+                <div class="card-body">
+                    <div class="d-flex align-items-center gap-2 mb-2">
+                        {{ score_stars(order.score) }}
+                        <span class="fw-semibold">{{ order.score }}.0 分</span>
+                    </div>
+                    <div class="border rounded-3 p-3 bg-body-tertiary small">
+                        {{ order.review_content or '学生未填写文字评价' }}
+                    </div>
+                    <div class="text-muted small mt-2">{{ order.review_time | dt }}</div>
+                </div>
+            </div>
+        {% endif %}
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>工单信息</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">提交时间</span>
+                    <span class="small">{{ order.created_at | dt }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">接单时间</span>
+                    <span class="small">{{ order.accepted_at | dt }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">完成时间</span>
+                    <span class="small">{{ order.completed_at | dt }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-2">
+                    <span class="text-muted small">负责维修人员</span>
+                    <span class="small">{{ order.worker_name or '尚未接单' }}</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

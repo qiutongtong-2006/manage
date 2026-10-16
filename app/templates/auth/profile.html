@@ -1,0 +1,87 @@
+{% extends "base.html" %}
+{% block title %}个人资料 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">工作台</a></li>
+        <li class="breadcrumb-item active">个人资料</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header d-flex justify-content-between align-items-center">
+                <span><i class="bi bi-person-vcard me-2"></i>基本资料</span>
+                <span class="badge rounded-pill bg-primary-subtle text-primary">{{ ROLE_LABEL.get(current_user.role, '') }}</span>
+            </div>
+            <div class="card-body">
+                <form method="post" novalidate>
+                    <div class="row g-3">
+                        <div class="col-md-6">
+                            <label class="form-label">登录账号</label>
+                            <input type="text" class="form-control" value="{{ current_user.username }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">
+                                {{ '学号' if current_user.role == 'student' else ('工号' if current_user.role == 'worker' else '账号类型') }}
+                            </label>
+                            <input type="text" class="form-control"
+                                   value="{{ current_user.student_no or current_user.worker_no or '系统管理员' }}" disabled>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required" for="real_name">姓名</label>
+                            <input type="text" class="form-control" id="real_name" name="real_name"
+                                   value="{{ current_user.real_name }}" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label required" for="phone">联系电话</label>
+                            <input type="text" class="form-control" id="phone" name="phone"
+                                   value="{{ current_user.phone or '' }}" required>
+                        </div>
+                        {% if current_user.role == 'student' %}
+                            <div class="col-12">
+                                <label class="form-label required" for="dorm_no">宿舍号</label>
+                                <input type="text" class="form-control" id="dorm_no" name="dorm_no"
+                                       value="{{ current_user.dorm_no or '' }}" placeholder="例如：3号楼 512" required>
+                            </div>
+                        {% endif %}
+                    </div>
+                    <button type="submit" class="btn btn-primary mt-4">
+                        <i class="bi bi-save me-1"></i>保存修改
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-5">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header"><i class="bi bi-key me-2"></i>修改密码</div>
+            <div class="card-body">
+                <form method="post" action="{{ url_for('auth.change_password') }}" novalidate>
+                    <div class="mb-3">
+                        <label class="form-label required" for="old_password">原密码</label>
+                        <input type="password" class="form-control" id="old_password" name="old_password" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required" for="new_password">新密码</label>
+                        <input type="password" class="form-control" id="new_password" name="new_password"
+                               placeholder="不少于 6 位" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label required" for="confirm_password">确认新密码</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password" required>
+                    </div>
+                    <button type="submit" class="btn btn-outline-primary w-100">
+                        <i class="bi bi-shield-lock me-1"></i>确认修改密码
+                    </button>
+                </form>
+                <div class="hint-box p-3 mt-4">
+                    上次登录时间：{{ current_user.last_login_at | dt if current_user.last_login_at else '首次登录' }}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,111 @@
+{% extends "base.html" %}
+{% block title %}提交报修 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">工作台</a></li>
+        <li class="breadcrumb-item active">提交报修工单</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header"><i class="bi bi-tools me-2"></i>填写报修信息</div>
+            <div class="card-body">
+                <form method="post" enctype="multipart/form-data" novalidate>
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label required" for="building">宿舍楼栋</label>
+                            <select class="form-select" id="building" name="building" required>
+                                <option value="">请选择楼栋</option>
+                                {% for item in DORM_BUILDINGS %}
+                                    <option value="{{ item }}"
+                                            {{ 'selected' if form and form.get('building') == item }}>{{ item }}</option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required" for="dorm_no">宿舍号</label>
+                            <input type="text" class="form-control" id="dorm_no" name="dorm_no"
+                                   value="{{ form.get('dorm_no') if form and form.get('dorm_no') else (current_user.dorm_no or '') }}"
+                                   placeholder="例如：512" required>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required" for="category_id">故障类别</label>
+                            <select class="form-select" id="category_id" name="category_id" required>
+                                <option value="">请选择故障类别</option>
+                                {% for category in categories %}
+                                    <option value="{{ category.id }}"
+                                            {{ 'selected' if form and form.get('category_id') == category.id | string }}>
+                                        {{ category.name }}
+                                    </option>
+                                {% endfor %}
+                            </select>
+                        </div>
+                        <div class="col-md-4">
+                            <label class="form-label required" for="phone">联系电话</label>
+                            <input type="text" class="form-control" id="phone" name="phone"
+                                   value="{{ form.get('phone') if form and form.get('phone') else (current_user.phone or '') }}"
+                                   placeholder="11 位手机号，便于维修人员联系" required>
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label" for="images">现场图片（选填，最多 3 张）</label>
+                            <input class="form-control" type="file" id="images" name="images" multiple
+                                   accept="image/*" data-preview="imagePreview" data-max="3" data-max-size="5">
+                            <div class="form-text">支持 png / jpg / jpeg / gif / bmp / webp，单张不超过 5MB</div>
+                        </div>
+                        <div class="col-12">
+                            <div class="upload-preview" id="imagePreview"></div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label required" for="description">故障详细描述</label>
+                            <textarea class="form-control" id="description" name="description" rows="5"
+                                      placeholder="请描述故障现象、发生时间以及是否影响正常使用，例如：洗手台下水管道漏水，地面已积水，晚上八点开始出现"
+                                      required>{{ form.get('description', '') if form else '' }}</textarea>
+                        </div>
+                    </div>
+                    <div class="d-flex gap-2 mt-4">
+                        <button type="submit" class="btn btn-primary px-4">
+                            <i class="bi bi-send me-1"></i>提交报修
+                        </button>
+                        <a class="btn btn-light" href="{{ url_for('main.dashboard') }}">取消</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header"><i class="bi bi-lightbulb me-2"></i>报修须知</div>
+            <div class="card-body small text-muted">
+                <ol class="ps-3 mb-0">
+                    <li class="mb-2">宿舍号请填写完整，例如 <code>3号楼 512</code>，便于维修人员快速上门。</li>
+                    <li class="mb-2">故障描述越具体，维修人员准备工具越充分，处理速度越快。</li>
+                    <li class="mb-2">上传现场照片可以帮助维修人员提前判断故障原因。</li>
+                    <li class="mb-2">工单提交后状态为「待受理」，可在「我的工单」中实时查看进度。</li>
+                    <li>维修完成后请及时评价，评价结果将用于维修人员考核。</li>
+                </ol>
+            </div>
+        </div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-header"><i class="bi bi-diagram-3 me-2"></i>工单状态说明</div>
+            <div class="card-body">
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge rounded-pill bg-warning text-dark">待受理</span>
+                    <span class="small text-muted">工单已提交，等待维修人员接单</span>
+                </div>
+                <div class="d-flex align-items-center gap-2 mb-2">
+                    <span class="badge rounded-pill bg-info text-dark">维修中</span>
+                    <span class="small text-muted">维修人员已接单，正在处理</span>
+                </div>
+                <div class="d-flex align-items-center gap-2">
+                    <span class="badge rounded-pill bg-success">已完成</span>
+                    <span class="small text-muted">维修完成，请进行评价</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

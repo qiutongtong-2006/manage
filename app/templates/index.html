@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}宿舍报修管理系统 · 首页{% endblock %}
+{% block content %}
+<div class="hero rounded-4 p-4 p-lg-5 mb-4">
+    <div class="row align-items-center g-4">
+        <div class="col-lg-7">
+            <h1 class="display-6 fw-bold mb-3">宿舍报修，一部手机就搞定</h1>
+            <p class="lead mb-4">
+                学生在线提交报修工单并上传现场照片，维修人员实时接单、更新维修进度，
+                管理员统一管理账号、工单与统计报表 —— 从报修到评价的完整闭环。
+            </p>
+            <div class="d-flex flex-wrap gap-2">
+                <a href="{{ url_for('auth.register') }}" class="btn btn-light btn-lg">
+                    <i class="bi bi-person-plus me-1"></i>学生注册
+                </a>
+                <a href="{{ url_for('auth.login') }}" class="btn btn-outline-light btn-lg">
+                    <i class="bi bi-box-arrow-in-right me-1"></i>登录系统
+                </a>
+            </div>
+        </div>
+        <div class="col-lg-5">
+            <div class="flow-card p-4">
+                <h6 class="text-uppercase text-muted small mb-3">业务办理流程</h6>
+                <ul class="flow-list mb-0">
+                    <li><span class="num">1</span>学生注册登录并提交报修工单</li>
+                    <li><span class="num">2</span>维修人员接单并更新维修进度</li>
+                    <li><span class="num">3</span>维修完成，工单状态自动更新</li>
+                    <li><span class="num">4</span>学生对本次维修评价打分</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-3">
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="feature-icon bg-primary-subtle text-primary"><i class="bi bi-mortarboard"></i></div>
+                <h5 class="card-title mt-3">学生用户</h5>
+                <p class="card-text text-muted mb-0">注册登录、提交报修（含图片上传）、实时查看工单状态、维修完成后评价打分。</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="feature-icon bg-success-subtle text-success"><i class="bi bi-wrench-adjustable"></i></div>
+                <h5 class="card-title mt-3">维修人员</h5>
+                <p class="card-text text-muted mb-0">查看全部待受理工单、一键接单、更新维修状态并填写维修备注信息。</p>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="card h-100 border-0 shadow-sm">
+            <div class="card-body">
+                <div class="feature-icon bg-warning-subtle text-warning"><i class="bi bi-shield-check"></i></div>
+                <h5 class="card-title mt-3">管理员</h5>
+                <p class="card-text text-muted mb-0">学生/维修工账号管理、工单检索与无效工单删除、多维度工单数据统计。</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

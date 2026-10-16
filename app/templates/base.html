@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>{% block title %}宿舍报修管理系统{% endblock %}</title>
+    <!-- 前端框架：Bootstrap 5（已本地化，断网也能正常显示） -->
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/bootstrap/bootstrap.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='vendor/icons/bootstrap-icons.min.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body class="d-flex flex-column min-vh-100">
+<nav class="navbar navbar-expand-lg navbar-dark app-navbar sticky-top shadow-sm">
+    <div class="container">
+        <a class="navbar-brand d-flex align-items-center gap-2" href="{{ url_for('main.index') }}">
+            <span class="brand-icon"><i class="bi bi-tools"></i></span>
+            <span class="fw-semibold">宿舍报修管理系统</span>
+        </a>
+        <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#mainNav">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="mainNav">
+            <ul class="navbar-nav me-auto mb-2 mb-lg-0">
+                {% if current_user and current_user.role == 'student' %}
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}"><i class="bi bi-speedometer2 me-1"></i>我的工作台</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'student.create_order' }}" href="{{ url_for('student.create_order') }}"><i class="bi bi-plus-circle me-1"></i>提交报修</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint in ['student.order_list', 'student.order_detail'] }}" href="{{ url_for('student.order_list') }}"><i class="bi bi-list-check me-1"></i>我的工单</a></li>
+                {% elif current_user and current_user.role == 'worker' %}
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'main.dashboard' }}" href="{{ url_for('main.dashboard') }}"><i class="bi bi-speedometer2 me-1"></i>我的工作台</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'worker.pending_orders' }}" href="{{ url_for('worker.pending_orders') }}"><i class="bi bi-inbox me-1"></i>待受理工单</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint in ['worker.order_list', 'worker.order_detail'] }}" href="{{ url_for('worker.order_list') }}"><i class="bi bi-clipboard-check me-1"></i>我的维修单</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'worker.reviews' }}" href="{{ url_for('worker.reviews') }}"><i class="bi bi-star me-1"></i>我的评价</a></li>
+                {% elif current_user and current_user.role == 'admin' %}
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin.dashboard' }}" href="{{ url_for('admin.dashboard') }}"><i class="bi bi-speedometer2 me-1"></i>系统概览</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint in ['admin.order_list', 'admin.order_detail'] }}" href="{{ url_for('admin.order_list') }}"><i class="bi bi-journal-text me-1"></i>工单管理</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin.user_list' }}" href="{{ url_for('admin.user_list') }}"><i class="bi bi-people me-1"></i>用户管理</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin.statistics' }}" href="{{ url_for('admin.statistics') }}"><i class="bi bi-bar-chart-line me-1"></i>数据统计</a></li>
+                    <li class="nav-item"><a class="nav-link {{ 'active' if request.endpoint == 'admin.review_list' }}" href="{{ url_for('admin.review_list') }}"><i class="bi bi-chat-square-heart me-1"></i>评价记录</a></li>
+                {% endif %}
+            </ul>
+            <ul class="navbar-nav">
+                {% if current_user %}
+                    <li class="nav-item dropdown">
+                        <a class="nav-link dropdown-toggle d-flex align-items-center gap-2" href="#" role="button" data-bs-toggle="dropdown">
+                            <span class="avatar">{{ current_user.real_name[:1] }}</span>
+                            <span>{{ current_user.real_name }}</span>
+                            <span class="badge rounded-pill role-badge">{{ ROLE_LABEL.get(current_user.role, '') }}</span>
+                        </a>
+                        <ul class="dropdown-menu dropdown-menu-end shadow-sm">
+                            <li><span class="dropdown-item-text small text-muted">账号：{{ current_user.username }}</span></li>
+                            <li><hr class="dropdown-divider"></li>
+                            <li><a class="dropdown-item" href="{{ url_for('auth.profile') }}"><i class="bi bi-person-gear me-2"></i>个人资料</a></li>
+                            <li><a class="dropdown-item text-danger" href="{{ url_for('auth.logout') }}"><i class="bi bi-box-arrow-right me-2"></i>退出登录</a></li>
+                        </ul>
+                    </li>
+                {% else %}
+                    <li class="nav-item"><a class="nav-link" href="{{ url_for('auth.login') }}"><i class="bi bi-box-arrow-in-right me-1"></i>登录</a></li>
+                    <li class="nav-item"><a class="btn btn-light btn-sm mt-lg-1 ms-lg-2" href="{{ url_for('auth.register') }}">学生注册</a></li>
+                {% endif %}
+            </ul>
+        </div>
+    </div>
+</nav>
+
+<main class="container py-4 flex-grow-1">
+    {% block breadcrumb %}{% endblock %}
+    {% block content %}{% endblock %}
+</main>
+
+<footer class="app-footer py-3 mt-auto">
+    <div class="container d-flex flex-wrap justify-content-between small">
+        <span>宿舍报修管理系统 · 软件工程课程设计</span>
+        <span class="text-muted">Python Flask + MySQL + Bootstrap 5</span>
+    </div>
+</footer>
+
+{# ---------- 友好弹窗提示：flash 消息以右上角 toast 形式弹出 ---------- #}
+{% with messages = get_flashed_messages(with_categories=true) %}
+    {% if messages %}
+        <div class="toast-container position-fixed top-0 end-0 p-3" style="z-index: 1090">
+            {% for category, message in messages %}
+                {% set cat = 'success' if category == 'success' else ('danger' if category == 'danger' else ('warning' if category == 'warning' else 'primary')) %}
+                <div class="toast align-items-center text-bg-{{ cat }} border-0 shadow" role="alert"
+                     data-bs-delay="4200" data-bs-autohide="true">
+                    <div class="d-flex">
+                        <div class="toast-body d-flex align-items-start gap-2">
+                            <i class="bi {{ 'bi-check-circle-fill' if cat == 'success' else ('bi-exclamation-triangle-fill' if cat in ['danger', 'warning'] else 'bi-info-circle-fill') }}"></i>
+                            <span>{{ message }}</span>
+                        </div>
+                        <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    {% endif %}
+{% endwith %}
+
+{# ---------- 全局二次确认弹窗：任何带 js-confirm 的表单提交前都会弹窗确认 ---------- #}
+<div class="modal fade" id="confirmModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="confirmModalTitle">操作确认</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="confirmModalBody">确定要执行该操作吗？</div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-light" data-bs-dismiss="modal">取消</button>
+                <button type="button" class="btn btn-danger" id="confirmModalOk">确定</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="{{ url_for('static', filename='vendor/bootstrap/bootstrap.bundle.min.js') }}"></script>
+<script src="{{ url_for('static', filename='js/main.js') }}"></script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

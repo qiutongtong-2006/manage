@@ -1,0 +1,113 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import pagination_bar, status_badge, empty_state %}
+{% block title %}我的工作台 · 宿舍报修管理系统{% endblock %}
+{% block content %}
+<div class="hero rounded-4 p-4 mb-4">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-3">
+        <div>
+            <h4 class="mb-1">你好，{{ current_user.real_name }} 同学 👋</h4>
+            <p class="mb-0 opacity-75">
+                学号 {{ current_user.student_no }} · 宿舍 {{ current_user.dorm_no }}
+                —— 宿舍设施有问题？点击右侧按钮马上报修。
+            </p>
+        </div>
+        <a href="{{ url_for('student.create_order') }}" class="btn btn-light btn-lg">
+            <i class="bi bi-plus-circle me-1"></i>提交报修工单
+        </a>
+    </div>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-primary-subtle text-primary"><i class="bi bi-journals"></i></div>
+                <div>
+                    <div class="stat-value">{{ counts.values() | sum }}</div>
+                    <div class="stat-label">我的报修总数</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-warning-subtle text-warning"><i class="bi bi-hourglass-split"></i></div>
+                <div>
+                    <div class="stat-value">{{ counts.get('pending', 0) }}</div>
+                    <div class="stat-label">待受理</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-info-subtle text-info"><i class="bi bi-wrench-adjustable-circle"></i></div>
+                <div>
+                    <div class="stat-value">{{ counts.get('processing', 0) }}</div>
+                    <div class="stat-label">维修中</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body d-flex align-items-center gap-3">
+                <div class="stat-icon bg-success-subtle text-success"><i class="bi bi-patch-check"></i></div>
+                <div>
+                    <div class="stat-value">{{ counts.get('completed', 0) }}</div>
+                    <div class="stat-label">已完成</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm table-card">
+    <div class="card-header d-flex justify-content-between align-items-center">
+        <span><i class="bi bi-clock-history me-2"></i>最近报修记录</span>
+        <a class="btn btn-sm btn-outline-primary" href="{{ url_for('student.order_list') }}">查看全部</a>
+    </div>
+    {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>工单号</th>
+                    <th>故障类别</th>
+                    <th>宿舍</th>
+                    <th>状态</th>
+                    <th>提交时间</th>
+                    <th class="text-end">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td class="font-monospace small">{{ order.order_no }}</td>
+                        <td>{{ order.category_name }}</td>
+                        <td>{{ order.building }} {{ order.dorm_no }}</td>
+                        <td>{{ status_badge(order.status) }}</td>
+                        <td class="text-muted small">{{ order.created_at | dt }}</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="{{ url_for('student.order_detail', order_id=order.id) }}">查看详情</a>
+                            {% if order.status == 'completed' and not order.score %}
+                                <a class="btn btn-sm btn-primary"
+                                   href="{{ url_for('student.review_form', order_id=order.id) }}">去评价</a>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-body">{{ pagination_bar(pagination, request.path + '?') }}</div>
+    {% else %}
+        <div class="card-body">
+            {{ empty_state('你还没有提交过报修工单，点击上方“提交报修工单”按钮开始吧', 'bi-clipboard-plus') }}
+        </div>
+    {% endif %}
+</div>
+{% endblock %}

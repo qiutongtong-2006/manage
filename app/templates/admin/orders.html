@@ -1,0 +1,149 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import pagination_bar, status_badge, empty_state %}
+{% block title %}工单管理 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">系统概览</a></li>
+        <li class="breadcrumb-item active">工单管理</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <div class="section-title">工单管理</div>
+        <div class="section-subtitle">支持多条件检索、查看全部报修工单、删除无效工单</div>
+    </div>
+    <span class="badge rounded-pill bg-primary-subtle text-primary fs-6">共 {{ pagination.total }} 条结果</span>
+</div>
+
+<div class="filter-bar mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-4">
+            <label class="form-label small text-muted mb-1">关键词</label>
+            <input type="text" class="form-control" name="keyword" value="{{ filters.keyword or '' }}"
+                   placeholder="工单号 / 宿舍号 / 描述 / 学生姓名 / 学号 / 电话">
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">工单状态</label>
+            <select class="form-select" name="status">
+                <option value="">全部</option>
+                {% for key, label in ORDER_STATUS_LABEL.items() %}
+                    <option value="{{ key }}" {{ 'selected' if filters.status == key }}>{{ label }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">故障类别</label>
+            <select class="form-select" name="category_id">
+                <option value="">全部</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {{ 'selected' if filters.category_id == category.id }}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">宿舍楼栋</label>
+            <select class="form-select" name="building">
+                <option value="">全部</option>
+                {% for item in DORM_BUILDINGS %}
+                    <option value="{{ item }}" {{ 'selected' if filters.building == item }}>{{ item }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="form-label small text-muted mb-1">数据状态</label>
+            <select class="form-select" name="deleted">
+                <option value="active" {{ 'selected' if filters.deleted == 'active' }}>有效工单</option>
+                <option value="deleted" {{ 'selected' if filters.deleted == 'deleted' }}>已删除工单</option>
+                <option value="all" {{ 'selected' if filters.deleted == 'all' }}>全部（含已删除）</option>
+            </select>
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted mb-1">提交时间（起）</label>
+            <input type="date" class="form-control" name="date_from" value="{{ filters.date_from or '' }}">
+        </div>
+        <div class="col-md-3">
+            <label class="form-label small text-muted mb-1">提交时间（止）</label>
+            <input type="date" class="form-control" name="date_to" value="{{ filters.date_to or '' }}">
+        </div>
+        <div class="col-md-6 d-flex gap-2">
+            <button type="submit" class="btn btn-primary">
+                <i class="bi bi-search me-1"></i>检索工单
+            </button>
+            <a class="btn btn-light" href="{{ url_for('admin.order_list') }}">
+                <i class="bi bi-arrow-counterclockwise me-1"></i>重置条件
+            </a>
+        </div>
+    </form>
+</div>
+
+<div class="card border-0 shadow-sm table-card">
+    {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>工单号</th>
+                    <th>报修学生</th>
+                    <th>宿舍</th>
+                    <th>故障类别</th>
+                    <th>故障描述</th>
+                    <th>维修人员</th>
+                    <th>状态</th>
+                    <th>提交时间</th>
+                    <th class="text-end">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for order in orders %}
+                    <tr class="{{ 'opacity-50' if order.is_deleted }}">
+                        <td class="font-monospace small">
+                            {{ order.order_no }}
+                            {% if order.is_deleted %}<span class="badge bg-secondary ms-1">已删除</span>{% endif %}
+                        </td>
+                        <td>
+                            {{ order.student_name }}
+                            <div class="text-muted small">{{ order.student_no }}</div>
+                        </td>
+                        <td class="small">{{ order.building }} {{ order.dorm_no }}</td>
+                        <td class="small">{{ order.category_name }}</td>
+                        <td class="text-truncate small" style="max-width: 200px;" title="{{ order.description }}">{{ order.description }}</td>
+                        <td class="small">{{ order.worker_name or '未接单' }}</td>
+                        <td>{{ status_badge(order.status) }}</td>
+                        <td class="text-muted small">{{ order.created_at | dt }}</td>
+                        <td class="text-end text-nowrap">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="{{ url_for('admin.order_detail', order_id=order.id) }}">详情</a>
+                            {% if order.is_deleted %}
+                                <form class="d-inline js-confirm" method="post"
+                                      action="{{ url_for('admin.order_restore', order_id=order.id) }}"
+                                      data-confirm="确认恢复工单 {{ order.order_no }} 吗？"
+                                      data-confirm-title="恢复工单" data-confirm-ok="确认恢复"
+                                      data-confirm-variant="primary">
+                                    <button type="submit" class="btn btn-sm btn-outline-primary">恢复</button>
+                                </form>
+                            {% else %}
+                                <form class="d-inline js-confirm" method="post"
+                                      action="{{ url_for('admin.order_delete', order_id=order.id) }}"
+                                      data-confirm="确定删除工单 {{ order.order_no }} 吗？删除后学生将无法看到该工单（可在“已删除工单”中恢复）。"
+                                      data-confirm-title="删除工单确认" data-confirm-ok="确认删除">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger">删除</button>
+                                </form>
+                            {% endif %}
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-body">
+            {% set base_query = request.full_path + '&' %}
+            {{ pagination_bar(pagination, base_query) }}
+        </div>
+    {% else %}
+        <div class="card-body">{{ empty_state('没有查到符合条件的工单，请调整检索条件') }}</div>
+    {% endif %}
+</div>
+{% endblock %}

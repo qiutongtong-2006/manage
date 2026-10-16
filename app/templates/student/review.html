@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+{% block title %}提交评价 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">工作台</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('student.order_list') }}">我的工单</a></li>
+        <li class="breadcrumb-item active">提交评价</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="row justify-content-center">
+    <div class="col-lg-7">
+        <div class="card border-0 shadow-sm">
+            <div class="card-header"><i class="bi bi-star me-2"></i>维修服务评价</div>
+            <div class="card-body">
+                <div class="border rounded-3 p-3 bg-body-tertiary mb-4">
+                    <div class="d-flex justify-content-between flex-wrap gap-2">
+                        <div>
+                            <div class="fw-semibold">{{ order.category_name }} · {{ order.building }} {{ order.dorm_no }}</div>
+                            <div class="text-muted small font-monospace">{{ order.order_no }}</div>
+                        </div>
+                        <div class="text-muted small text-end">
+                            <div>维修人员：{{ order.worker_name or '-' }}</div>
+                            <div>完成时间：{{ order.completed_at | dt }}</div>
+                        </div>
+                    </div>
+                    <div class="mt-2 small text-muted">故障描述：{{ order.description }}</div>
+                </div>
+
+                {% if order.score %}
+                    <div class="alert alert-success mb-0">该工单已于 {{ order.review_time | dt }} 完成评价，不能重复提交。</div>
+                {% else %}
+                    <form method="post" action="{{ url_for('student.submit_review', order_id=order.id) }}" novalidate>
+                        <div class="mb-4">
+                            <label class="form-label required d-block">服务评分</label>
+                            <div class="star-rating">
+                                {% for value in [5, 4, 3, 2, 1] %}
+                                    <input type="radio" name="score" id="star{{ value }}" value="{{ value }}"
+                                           {{ 'checked' if value == 5 }} required>
+                                    <label for="star{{ value }}" title="{{ value }} 星"><i class="bi bi-star-fill"></i></label>
+                                {% endfor %}
+                            </div>
+                            <div class="form-text" id="scoreHint">默认 5 星：非常满意</div>
+                        </div>
+                        <div class="mb-4">
+                            <label class="form-label" for="content">评价内容（选填）</label>
+                            <textarea class="form-control" id="content" name="content" rows="4"
+                                      placeholder="例如：师傅上门很及时，态度好，问题一次解决"></textarea>
+                        </div>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-primary px-4">
+                                <i class="bi bi-send-check me-1"></i>提交评价
+                            </button>
+                            <a class="btn btn-light" href="{{ url_for('student.order_detail', order_id=order.id) }}">返回工单</a>
+                        </div>
+                    </form>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,172 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import status_badge, score_stars, order_steps %}
+{% block title %}工单详情 {{ order.order_no }} · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">工作台</a></li>
+        <li class="breadcrumb-item"><a href="{{ url_for('student.order_list') }}">我的工单</a></li>
+        <li class="breadcrumb-item active">{{ order.order_no }}</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="card border-0 shadow-sm mb-4">
+    <div class="card-body">
+        <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+            <div>
+                <div class="section-title">
+                    工单号 <span class="font-monospace">{{ order.order_no }}</span>
+                    {{ status_badge(order.status) }}
+                </div>
+                <div class="section-subtitle">{{ order.category_name }} · {{ order.building }} {{ order.dorm_no }}</div>
+            </div>
+            <a href="{{ url_for('student.order_list') }}" class="btn btn-sm btn-outline-secondary">
+                <i class="bi bi-arrow-left me-1"></i>返回列表
+            </a>
+        </div>
+        {{ order_steps(step, reviewed=order.score is not none) }}
+    </div>
+</div>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header"><i class="bi bi-file-earmark-text me-2"></i>报修信息</div>
+            <div class="card-body">
+                <div class="row g-3 mb-3">
+                    <div class="col-sm-4">
+                        <div class="text-muted small">故障类别</div>
+                        <div>{{ order.category_name }}</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">宿舍</div>
+                        <div>{{ order.building }} {{ order.dorm_no }}</div>
+                    </div>
+                    <div class="col-sm-4">
+                        <div class="text-muted small">联系电话</div>
+                        <div>{{ order.phone }}</div>
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <div class="text-muted small">故障详细描述</div>
+                    <div class="border rounded-3 p-3 bg-body-tertiary" style="white-space: pre-wrap;">{{ order.description }}</div>
+                </div>
+                {% if images %}
+                    <div class="text-muted small mb-2">现场图片（{{ images | length }} 张，点击可查看大图）</div>
+                    <div class="d-flex flex-wrap gap-2">
+                        {% for image in images %}
+                            <a href="{{ url_for('static', filename=image.file_path) }}" target="_blank">
+                                <img class="thumb" src="{{ url_for('static', filename=image.file_path) }}" alt="报修现场图片">
+                            </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-muted small">该工单未上传现场图片</div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header"><i class="bi bi-activity me-2"></i>维修进度记录</div>
+            <div class="card-body">
+                <ul class="timeline">
+                    {% for log in logs %}
+                        <li>
+                            <div class="fw-semibold">
+                                {{ ACTION_LABEL.get(log.action, log.action) }}
+                                {% if log.operator_name %}
+                                    <span class="text-muted fw-normal small">· {{ log.operator_name }}</span>
+                                {% endif %}
+                            </div>
+                            {% if log.remark %}<div class="small">{{ log.remark }}</div>{% endif %}
+                            <span class="time">{{ log.created_at | dt('%Y-%m-%d %H:%M:%S') }}</span>
+                        </li>
+                    {% endfor %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="card-header"><i class="bi bi-chat-square-heart me-2"></i>本次维修评价</div>
+            <div class="card-body">
+                {% if order.score %}
+                    <div class="d-flex align-items-center gap-3 mb-2">
+                        {{ score_stars(order.score) }}
+                        <span class="fw-semibold">{{ order.score }}.0 分</span>
+                        <span class="text-muted small">{{ order.review_time | dt }}</span>
+                    </div>
+                    <div class="border rounded-3 p-3 bg-body-tertiary">
+                        {{ order.review_content or '该同学没有填写文字评价' }}
+                    </div>
+                {% elif order.status == 'completed' %}
+                    <p class="text-muted">维修已完成，请对本次维修服务进行评价（提交后不可修改）：</p>
+                    <form method="post" action="{{ url_for('student.submit_review', order_id=order.id) }}" novalidate>
+                        <div class="mb-3">
+                            <label class="form-label required d-block">服务评分</label>
+                            <div class="star-rating">
+                                {% for value in [5, 4, 3, 2, 1] %}
+                                    <input type="radio" name="score" id="score{{ value }}" value="{{ value }}"
+                                           {{ 'checked' if value == 5 }} required>
+                                    <label for="score{{ value }}" title="{{ value }} 星"><i class="bi bi-star-fill"></i></label>
+                                {% endfor %}
+                            </div>
+                            <div class="form-text" id="scoreHint">默认 5 星：非常满意</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label" for="content">评价内容（选填）</label>
+                            <textarea class="form-control" id="content" name="content" rows="3"
+                                      placeholder="维修是否及时？服务态度如何？欢迎留下宝贵建议"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-primary">
+                            <i class="bi bi-send-check me-1"></i>提交评价
+                        </button>
+                    </form>
+                {% else %}
+                    <p class="text-muted mb-0">
+                        <i class="bi bi-info-circle me-1"></i>工单维修完成后即可在此提交评价。
+                    </p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm mb-4">
+            <div class="card-header"><i class="bi bi-info-circle me-2"></i>工单信息</div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">提交时间</span>
+                    <span class="small">{{ order.created_at | dt }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">接单时间</span>
+                    <span class="small">{{ order.accepted_at | dt }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">完成时间</span>
+                    <span class="small">{{ order.completed_at | dt }}</span>
+                </div>
+                <div class="d-flex justify-content-between py-2 border-bottom">
+                    <span class="text-muted small">维修人员</span>
+                    <span class="small">{{ order.worker_name or '等待接单' }}</span>
+                </div>
+                {% if order.worker_phone %}
+                    <div class="d-flex justify-content-between py-2">
+                        <span class="text-muted small">维修人员电话</span>
+                        <span class="small">{{ order.worker_phone }}</span>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+        <div class="card border-0 shadow-sm">
+            <div class="card-header"><i class="bi bi-question-circle me-2"></i>温馨提示</div>
+            <div class="card-body small text-muted">
+                <p class="mb-2">· 维修人员接单后会通过预留电话与您联系，请保持手机畅通。</p>
+                <p class="mb-2">· 如维修人员长时间未上门，可在工单下方留言提示（或联系宿管老师）。</p>
+                <p class="mb-0">· 维修过程中请勿重复提交相同故障的工单。</p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,77 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import score_stars, empty_state %}
+{% block title %}评价记录 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">系统概览</a></li>
+        <li class="breadcrumb-item active">评价记录</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <div class="section-title">评价记录</div>
+        <div class="section-subtitle">所有工单的学生评价，平均评分 {{ avg_score }} 分（满分 5 分）</div>
+    </div>
+</div>
+
+<div class="filter-bar mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-6">
+            <label class="form-label small text-muted mb-1">关键词</label>
+            <input type="text" class="form-control" name="keyword" value="{{ keyword }}"
+                   placeholder="工单号 / 学生姓名 / 维修人员姓名 / 评价内容">
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-primary flex-grow-1">
+                <i class="bi bi-search me-1"></i>查询
+            </button>
+            <a class="btn btn-light" href="{{ url_for('admin.review_list') }}">重置</a>
+        </div>
+    </form>
+</div>
+
+<div class="card border-0 shadow-sm table-card">
+    {% if reviews %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>工单号</th>
+                    <th>学生</th>
+                    <th>维修人员</th>
+                    <th>故障类别</th>
+                    <th>宿舍</th>
+                    <th>评分</th>
+                    <th>评价内容</th>
+                    <th>评价时间</th>
+                    <th class="text-end">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for review in reviews %}
+                    <tr>
+                        <td class="font-monospace small">{{ review.order_no }}</td>
+                        <td>{{ review.student_name }}</td>
+                        <td>{{ review.worker_name }}</td>
+                        <td class="small">{{ review.category_name }}</td>
+                        <td class="small">{{ review.building }} {{ review.dorm_no }}</td>
+                        <td>{{ score_stars(review.score) }}</td>
+                        <td class="text-muted small">{{ review.content or '—' }}</td>
+                        <td class="text-muted small">{{ review.created_at | dt }}</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="{{ url_for('admin.order_detail', order_id=review.order_id) }}">查看工单</a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <div class="card-body">{{ empty_state('暂无评价记录') }}</div>
+    {% endif %}
+</div>
+{% endblock %}

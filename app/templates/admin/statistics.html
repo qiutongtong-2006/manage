@@ -1,0 +1,219 @@
+{% extends "base.html" %}
+{% block title %}数据统计 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('admin.dashboard') }}">系统概览</a></li>
+        <li class="breadcrumb-item active">数据统计</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <div class="section-title">工单数据统计</div>
+        <div class="section-subtitle">从状态、类别、楼栋、时间、人员五个维度分析报修数据</div>
+    </div>
+    <a class="btn btn-outline-secondary" href="{{ url_for('admin.statistics') }}">
+        <i class="bi bi-arrow-clockwise me-1"></i>刷新数据
+    </a>
+</div>
+
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">工单总量</div>
+                <div class="stat-value">{{ stats.total }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">完成率</div>
+                <div class="stat-value">
+                    {{ (stats.completed * 100 / stats.total) | round(1) if stats.total else 0 }}%
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">平均评分（满分 5）</div>
+                <div class="stat-value">{{ stats.avg_score }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">平均维修时长（小时）</div>
+                <div class="stat-value">{{ stats.avg_duration }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header"><i class="bi bi-graph-up me-2"></i>近 {{ stats.trend | length }} 个月报修趋势</div>
+            <div class="card-body">
+                {% set max_trend = (stats.trend | map(attribute='total') | list | max) or 1 %}
+                <div class="d-flex align-items-end justify-content-between gap-2" style="height: 210px;">
+                    {% for item in stats.trend %}
+                        <div class="flex-grow-1 text-center d-flex flex-column justify-content-end h-100">
+                            <div class="small fw-semibold">{{ item.total }}</div>
+                            <div class="rounded-top" title="新增 {{ item.total }} 单，完成 {{ item.completed }} 单"
+                                 style="height: {{ (item.total * 150 / max_trend) | round(0) }}px; background: linear-gradient(180deg,#4e7ce8,#2f5bd0);"></div>
+                            <div class="rounded-bottom" title="已完成 {{ item.completed }} 单"
+                                 style="height: {{ (item.completed * 150 / max_trend) | round(0) }}px; background: #2bb673;"></div>
+                            <div class="small text-muted mt-1">{{ item.label }}</div>
+                        </div>
+                    {% endfor %}
+                </div>
+                <div class="d-flex gap-3 mt-3 small text-muted">
+                    <span><span class="d-inline-block rounded" style="width:10px;height:10px;background:#2f5bd0;"></span> 新增工单</span>
+                    <span><span class="d-inline-block rounded" style="width:10px;height:10px;background:#2bb673;"></span> 已完成工单</span>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header"><i class="bi bi-bar-chart me-2"></i>故障类别分布</div>
+            <div class="card-body">
+                {% if stats.categories %}
+                    <table class="table table-sm align-middle mb-0">
+                        <thead>
+                        <tr>
+                            <th>类别</th>
+                            <th style="width: 42%;">占比</th>
+                            <th class="text-center">工单数</th>
+                            <th class="text-center">已完成</th>
+                            <th class="text-center">平均评分</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        {% for item in stats.categories %}
+                            <tr>
+                                <td>{{ item.category_name }}</td>
+                                <td>
+                                    <div class="progress" style="height: 8px;">
+                                        <div class="progress-bar bg-primary" style="width: {{ item.percent }}%;"></div>
+                                    </div>
+                                </td>
+                                <td class="text-center">{{ item.total }}</td>
+                                <td class="text-center">{{ item.completed }}</td>
+                                <td class="text-center">{{ item.avg_score if item.avg_score else '—' }}</td>
+                            </tr>
+                        {% endfor %}
+                        </tbody>
+                    </table>
+                {% else %}
+                    <p class="text-muted mb-0">暂无数据</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header"><i class="bi bi-building me-2"></i>楼栋报修分布</div>
+            <div class="card-body">
+                {% if stats.buildings %}
+                    {% for item in stats.buildings %}
+                        <div class="mb-3">
+                            <div class="d-flex justify-content-between small">
+                                <span>{{ item.building }}</span>
+                                <span class="text-muted">共 {{ item.total }} 单（未完成 {{ item.unfinished }} 单）</span>
+                            </div>
+                            <div class="progress" style="height: 8px;">
+                                <div class="progress-bar bg-success" style="width: {{ item.percent }}%;"></div>
+                            </div>
+                        </div>
+                    {% endfor %}
+                {% else %}
+                    <p class="text-muted mb-0">暂无数据</p>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-6">
+        <div class="card border-0 shadow-sm h-100">
+            <div class="card-header"><i class="bi bi-star-half me-2"></i>服务评分分布</div>
+            <div class="card-body">
+                {% set reviewed_total = stats.reviewed or 1 %}
+                {% for star in [5, 4, 3, 2, 1] %}
+                    <div class="mb-3">
+                        <div class="d-flex justify-content-between small">
+                            <span class="text-warning">
+                                {{ '★' * star }}{{ '☆' * (5 - star) }}
+                            </span>
+                            <span class="text-muted">
+                                {{ stats.scores.get(star, 0) }} 次 ·
+                                {{ (stats.scores.get(star, 0) * 100 / reviewed_total) | round(1) }}%
+                            </span>
+                        </div>
+                        <div class="progress" style="height: 8px;">
+                            <div class="progress-bar bg-warning"
+                                 style="width: {{ (stats.scores.get(star, 0) * 100 / reviewed_total) | round(1) }}%;"></div>
+                        </div>
+                    </div>
+                {% endfor %}
+                <p class="text-muted small mb-0">共有 {{ stats.reviewed }} 条工单完成评价。</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header"><i class="bi bi-trophy me-2"></i>维修人员工作量与评分排名</div>
+    <div class="card-body p-0">
+        <div class="table-responsive">
+            <table class="table table-hover align-middle mb-0">
+                <thead>
+                <tr>
+                    <th class="ps-3">排名</th>
+                    <th>维修人员</th>
+                    <th>工种</th>
+                    <th class="text-center">累计接单</th>
+                    <th class="text-center">已完成</th>
+                    <th class="text-center">维修中</th>
+                    <th class="text-center">平均评分</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for worker in stats.workers %}
+                    <tr>
+                        <td class="ps-3">
+                            {% if loop.index == 1 and worker.total_count %}
+                                <span class="badge bg-warning text-dark">金</span>
+                            {% elif loop.index == 2 and worker.total_count %}
+                                <span class="badge bg-secondary">银</span>
+                            {% elif loop.index == 3 and worker.total_count %}
+                                <span class="badge" style="background:#cd7f32;">铜</span>
+                            {% else %}
+                                <span class="text-muted">{{ loop.index }}</span>
+                            {% endif %}
+                        </td>
+                        <td>{{ worker.real_name }} <span class="text-muted small">({{ worker.username }})</span></td>
+                        <td class="small text-muted">{{ worker.skill }}</td>
+                        <td class="text-center">{{ worker.total_count }}</td>
+                        <td class="text-center">{{ worker.completed_count }}</td>
+                        <td class="text-center">{{ worker.processing_count }}</td>
+                        <td class="text-center">{{ worker.avg_score }}</td>
+                    </tr>
+                {% else %}
+                    <tr><td colspan="7" class="text-center text-muted py-4">暂无维修人员数据</td></tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+{% endblock %}

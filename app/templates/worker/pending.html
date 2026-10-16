@@ -1,0 +1,92 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import pagination_bar, empty_state %}
+{% block title %}待受理工单 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">工作台</a></li>
+        <li class="breadcrumb-item active">待受理工单</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <div class="section-title">待受理工单（抢单大厅）</div>
+        <div class="section-subtitle">展示全部尚未被接单的报修工单，先到先得</div>
+    </div>
+    <span class="badge rounded-pill bg-primary-subtle text-primary fs-6">共 {{ pagination.total }} 条待处理</span>
+</div>
+
+<div class="filter-bar mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label small text-muted mb-1">关键词</label>
+            <input type="text" class="form-control" name="keyword" value="{{ keyword }}"
+                   placeholder="工单号 / 宿舍号 / 故障描述 / 学生姓名">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small text-muted mb-1">故障类别</label>
+            <select class="form-select" name="category_id">
+                <option value="">全部类别</option>
+                {% for category in categories %}
+                    <option value="{{ category.id }}" {{ 'selected' if category_id == category.id }}>{{ category.name }}</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-primary flex-grow-1">
+                <i class="bi bi-search me-1"></i>查询
+            </button>
+            <a class="btn btn-light" href="{{ url_for('worker.pending_orders') }}">重置</a>
+        </div>
+    </form>
+</div>
+
+{% if orders %}
+    <div class="row g-3">
+        {% for order in orders %}
+            <div class="col-md-6 col-xl-4">
+                <div class="card border-0 shadow-sm h-100">
+                    <div class="card-body d-flex flex-column">
+                        <div class="d-flex justify-content-between align-items-start mb-2">
+                            <span class="badge rounded-pill bg-warning text-dark">待受理</span>
+                            <span class="text-muted small">{{ order.created_at | dt }}</span>
+                        </div>
+                        <div class="font-monospace small text-muted">{{ order.order_no }}</div>
+                        <div class="fw-semibold mb-1">{{ order.category_name }}</div>
+                        <div class="text-muted small mb-2">
+                            <i class="bi bi-geo-alt me-1"></i>{{ order.building }} {{ order.dorm_no }}
+                            <span class="mx-1">·</span>
+                            <i class="bi bi-person me-1"></i>{{ order.student_name }}
+                        </div>
+                        <p class="small flex-grow-1 mb-2" style="white-space: pre-wrap;">{{ order.description | truncate(80) }}</p>
+                        <div class="text-muted small mb-3"><i class="bi bi-telephone me-1"></i>{{ order.phone }}</div>
+                        <div class="d-flex gap-2">
+                            <a class="btn btn-sm btn-outline-secondary flex-grow-1"
+                               href="{{ url_for('worker.order_detail', order_id=order.id) }}">查看详情</a>
+                            <form class="flex-grow-1 js-confirm" method="post"
+                                  action="{{ url_for('worker.accept_order', order_id=order.id) }}"
+                                  data-confirm="确认接单？接单后请尽快联系学生并上门维修。"
+                                  data-confirm-title="接单确认" data-confirm-ok="确认接单"
+                                  data-confirm-variant="primary">
+                                <button type="submit" class="btn btn-sm btn-primary w-100">
+                                    <i class="bi bi-hand-index-thumb me-1"></i>接单
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    </div>
+    <div class="mt-3">
+        {% set base_query = request.path + '?keyword=' + keyword + '&category_id=' + (category_id | string if category_id else '') + '&' %}
+        {{ pagination_bar(pagination, base_query) }}
+    </div>
+{% else %}
+    <div class="card border-0 shadow-sm">
+        <div class="card-body">{{ empty_state('当前没有待受理的工单，所有报修都已被处理 🎉', 'bi-emoji-smile') }}</div>
+    </div>
+{% endif %}
+{% endblock %}

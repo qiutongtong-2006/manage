@@ -1,0 +1,61 @@
+{% extends "base.html" %}
+{% block title %}学生注册 · 宿舍报修管理系统{% endblock %}
+{% block content %}
+<div class="auth-wrapper" style="max-width: 620px;">
+    <div class="card border-0 shadow-sm">
+        <div class="card-header">
+            <div class="title"><i class="bi bi-person-plus me-2"></i>学生账号注册</div>
+            <div class="small opacity-75 mt-1">维修人员与管理员账号由管理员统一创建</div>
+        </div>
+        <div class="card-body p-4">
+            <form method="post" novalidate>
+                <div class="row g-3">
+                    <div class="col-md-6">
+                        <label class="form-label required" for="username">登录账号</label>
+                        <input type="text" class="form-control" id="username" name="username"
+                               value="{{ form.get('username', '') if form else '' }}"
+                               placeholder="4-20 位字母、数字或下划线" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label required" for="real_name">姓名</label>
+                        <input type="text" class="form-control" id="real_name" name="real_name"
+                               value="{{ form.get('real_name', '') if form else '' }}" placeholder="请输入真实姓名" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label required" for="password">登录密码</label>
+                        <input type="password" class="form-control" id="password" name="password"
+                               placeholder="不少于 6 位" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label required" for="confirm_password">确认密码</label>
+                        <input type="password" class="form-control" id="confirm_password" name="confirm_password"
+                               placeholder="请再次输入密码" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label required" for="student_no">学号</label>
+                        <input type="text" class="form-control" id="student_no" name="student_no"
+                               value="{{ form.get('student_no', '') if form else '' }}" placeholder="例如 20230101" required>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label required" for="phone">联系电话</label>
+                        <input type="text" class="form-control" id="phone" name="phone"
+                               value="{{ form.get('phone', '') if form else '' }}" placeholder="11 位手机号" required>
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label required" for="dorm_no">宿舍号</label>
+                        <input type="text" class="form-control" id="dorm_no" name="dorm_no"
+                               value="{{ form.get('dorm_no', '') if form else '' }}"
+                               placeholder="例如：3号楼 512，提交报修时会自动填入" required>
+                    </div>
+                </div>
+                <button type="submit" class="btn btn-primary w-100 py-2 mt-4">
+                    <i class="bi bi-check2-circle me-1"></i>提交注册
+                </button>
+            </form>
+            <div class="text-center mt-3 small">
+                已有账号？<a href="{{ url_for('auth.login') }}">返回登录</a>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

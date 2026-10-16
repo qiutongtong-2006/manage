@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import pagination_bar, status_badge, empty_state %}
+{% block title %}我的维修单 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">工作台</a></li>
+        <li class="breadcrumb-item active">我的维修单</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
+    <div>
+        <div class="section-title">我的维修单</div>
+        <div class="section-subtitle">我接单的全部工单，可在此更新维修进度与备注</div>
+    </div>
+    <a href="{{ url_for('worker.pending_orders') }}" class="btn btn-primary">
+        <i class="bi bi-inbox me-1"></i>待受理工单
+    </a>
+</div>
+
+<div class="filter-bar mb-3">
+    <form method="get" class="row g-2 align-items-end">
+        <div class="col-md-5">
+            <label class="form-label small text-muted mb-1">关键词</label>
+            <input type="text" class="form-control" name="keyword" value="{{ keyword }}"
+                   placeholder="工单号 / 宿舍号 / 故障描述">
+        </div>
+        <div class="col-md-4">
+            <label class="form-label small text-muted mb-1">维修状态</label>
+            <select class="form-select" name="status">
+                <option value="">全部状态</option>
+                {% for key, label in ORDER_STATUS_LABEL.items() %}
+                    <option value="{{ key }}" {{ 'selected' if status == key }}>{{ label }}（{{ counts.get(key, 0) }}）</option>
+                {% endfor %}
+            </select>
+        </div>
+        <div class="col-md-3 d-flex gap-2">
+            <button type="submit" class="btn btn-outline-primary flex-grow-1">
+                <i class="bi bi-search me-1"></i>查询
+            </button>
+            <a class="btn btn-light" href="{{ url_for('worker.order_list') }}">重置</a>
+        </div>
+    </form>
+</div>
+
+<div class="card border-0 shadow-sm table-card">
+    {% if orders %}
+        <div class="table-responsive">
+            <table class="table table-hover mb-0">
+                <thead>
+                <tr>
+                    <th>工单号</th>
+                    <th>故障类别</th>
+                    <th>宿舍</th>
+                    <th>报修学生</th>
+                    <th>联系电话</th>
+                    <th>状态</th>
+                    <th>接单时间</th>
+                    <th class="text-end">操作</th>
+                </tr>
+                </thead>
+                <tbody>
+                {% for order in orders %}
+                    <tr>
+                        <td class="font-monospace small">{{ order.order_no }}</td>
+                        <td>{{ order.category_name }}</td>
+                        <td>{{ order.building }} {{ order.dorm_no }}</td>
+                        <td>{{ order.student_name }}</td>
+                        <td class="small">{{ order.phone }}</td>
+                        <td>{{ status_badge(order.status) }}</td>
+                        <td class="text-muted small">{{ order.accepted_at | dt }}</td>
+                        <td class="text-end">
+                            <a class="btn btn-sm btn-outline-secondary"
+                               href="{{ url_for('worker.order_detail', order_id=order.id) }}">
+                                {{ '更新进度' if order.status != 'completed' else '查看' }}
+                            </a>
+                        </td>
+                    </tr>
+                {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        <div class="card-body">
+            {% set base_query = request.path + '?status=' + (status or '') + '&keyword=' + keyword + '&' %}
+            {{ pagination_bar(pagination, base_query) }}
+        </div>
+    {% else %}
+        <div class="card-body">{{ empty_state('还没有接单记录，去抢单大厅看看有哪些报修吧') }}</div>
+    {% endif %}
+</div>
+{% endblock %}

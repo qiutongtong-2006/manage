@@ -1,0 +1,86 @@
+{% extends "base.html" %}
+{% from "partials/_macros.html" import score_stars, empty_state %}
+{% block title %}我的评价 · 宿舍报修管理系统{% endblock %}
+{% block breadcrumb %}
+<nav aria-label="breadcrumb">
+    <ol class="breadcrumb small">
+        <li class="breadcrumb-item"><a href="{{ url_for('main.dashboard') }}">工作台</a></li>
+        <li class="breadcrumb-item active">我的评价</li>
+    </ol>
+</nav>
+{% endblock %}
+{% block content %}
+<div class="row g-3 mb-4">
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">平均评分</div>
+                <div class="stat-value">{{ profile.avg_score }}</div>
+                <div>{{ score_stars(profile.avg_score) }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">累计接单</div>
+                <div class="stat-value">{{ profile.total }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">维修中</div>
+                <div class="stat-value">{{ profile.processing }}</div>
+            </div>
+        </div>
+    </div>
+    <div class="col-6 col-lg-3">
+        <div class="card stat-card h-100">
+            <div class="card-body">
+                <div class="stat-label">已完成</div>
+                <div class="stat-value">{{ profile.completed }}</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm">
+    <div class="card-header"><i class="bi bi-chat-square-heart me-2"></i>学生评价记录</div>
+    <div class="card-body">
+        {% if reviews %}
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead>
+                    <tr>
+                        <th>工单号</th>
+                        <th>学生</th>
+                        <th>故障类别</th>
+                        <th>宿舍</th>
+                        <th>评分</th>
+                        <th>评价内容</th>
+                        <th>评价时间</th>
+                    </tr>
+                    </thead>
+                    <tbody>
+                    {% for review in reviews %}
+                        <tr>
+                            <td class="font-monospace small">{{ review.order_no }}</td>
+                            <td>{{ review.student_name }}</td>
+                            <td>{{ review.category_name }}</td>
+                            <td>{{ review.building }} {{ review.dorm_no }}</td>
+                            <td>{{ score_stars(review.score) }}</td>
+                            <td class="text-muted small">{{ review.content or '—' }}</td>
+                            <td class="text-muted small">{{ review.created_at | dt }}</td>
+                        </tr>
+                    {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% else %}
+            {{ empty_state('还没有收到学生评价') }}
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,57 @@
+{# 可复用的模板宏：分页条、状态徽章、星级、工单流程条 #}
+
+{% macro pagination_bar(pagination, base_query) %}
+    {% if pagination.pages > 1 %}
+        <nav aria-label="分页导航">
+            <ul class="pagination pagination-sm justify-content-center mb-0">
+                <li class="page-item {{ 'disabled' if not pagination.has_prev }}">
+                    <a class="page-link" href="{{ base_query }}page={{ pagination.page - 1 }}">上一页</a>
+                </li>
+                {% for p in pagination.iter_pages %}
+                    {% if p %}
+                        <li class="page-item {{ 'active' if p == pagination.page }}">
+                            <a class="page-link" href="{{ base_query }}page={{ p }}">{{ p }}</a>
+                        </li>
+                    {% else %}
+                        <li class="page-item disabled"><span class="page-link">…</span></li>
+                    {% endif %}
+                {% endfor %}
+                <li class="page-item {{ 'disabled' if not pagination.has_next }}">
+                    <a class="page-link" href="{{ base_query }}page={{ pagination.page + 1 }}">下一页</a>
+                </li>
+            </ul>
+        </nav>
+        <p class="text-center text-muted small mt-2 mb-0">
+            共 {{ pagination.total }} 条记录，第 {{ pagination.page }} / {{ pagination.pages }} 页
+        </p>
+    {% else %}
+        <p class="text-center text-muted small mb-0">共 {{ pagination.total }} 条记录</p>
+    {% endif %}
+{% endmacro %}
+
+{% macro status_badge(status) %}
+    <span class="badge rounded-pill bg-{{ ORDER_STATUS_BADGE.get(status, 'secondary') }}">
+        {{ ORDER_STATUS_LABEL.get(status, status) }}
+    </span>
+{% endmacro %}
+
+{% macro score_stars(score) %}
+    <span class="text-warning" title="{{ score }} 星">{{ score | stars }}</span>
+{% endmacro %}
+
+{# 工单流程条：step 1 待受理 / 2 维修中 / 3 已完成 #}
+{% macro order_steps(step, reviewed=False) %}
+    <ol class="order-steps">
+        <li class="{{ 'done' if step >= 1 }}"><span class="dot"><i class="bi bi-1-circle"></i></span>提交报修</li>
+        <li class="{{ 'done' if step >= 2 }}"><span class="dot"><i class="bi bi-2-circle"></i></span>维修人员接单</li>
+        <li class="{{ 'done' if step >= 3 }}"><span class="dot"><i class="bi bi-3-circle"></i></span>维修完成</li>
+        <li class="{{ 'done' if reviewed }}"><span class="dot"><i class="bi bi-4-circle"></i></span>学生评价</li>
+    </ol>
+{% endmacro %}
+
+{% macro empty_state(text, icon='bi-inbox') %}
+    <div class="text-center text-muted py-5">
+        <i class="bi {{ icon }} empty-icon"></i>
+        <p class="mt-3 mb-0">{{ text }}</p>
+    </div>
+{% endmacro %}
